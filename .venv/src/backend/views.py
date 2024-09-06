@@ -214,26 +214,22 @@ class MessageView():
             query = split_query(query, split_count, split_interval)
             return total, query.all()
 
-    def get_usr_name(self,sender_id):
-        query = select(User.name).where(User.id == sender_id)
+    def get_sender_name(self, user_id):
+        query = select(User.name).where(User.id == user_id)
         result = self.session.execute(query).scalar_one_or_none()
-        # query = select(User.name).join(Message,Message.sender_id == User.id).where(Message.sender_id == sender_id)
-        # try:
-            # result = self.session.execute(query).scalar_one_or_none()
-        #     result = self.session.execute(query).first()
-        # except MultipleResultsFound as e:
-        #     print(e)
-        #     result = self.session.execute(query).first()
-        #     print(result)
-        #     exit()
         return result
+
+    def get_sender_usrname(self, user_id):
+        query = select(User.user_name).where(User.id == user_id)
+        result = self.session.execute(query).scalar_one_or_none()
+        return result
+
+    def get_by_pk(self, key):
+        return self.session.query(Message).filter(Message.id == key).first()
 
     def get_fwd_info(self, forward_id):
         self.session.flush()
-        # fwd_info = self.session.query(ForwardInfo).all()
         fwd_info = self.session.query(ForwardInfo).filter(ForwardInfo.id==forward_id).first()
-        # query = select(ForwardInfo).where(ForwardInfo.id == forward_id)
-        # fwd_info = self.session.execute(query).scalar_one_or_none()
         return fwd_info
 
     def get_max_entity_id(self, entity_id):

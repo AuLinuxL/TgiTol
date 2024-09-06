@@ -19,6 +19,7 @@ from qasync import asyncSlot
 from ui.component.SendMsgPageSetting import SendMsgPageSetting
 from ui.component.PickEntityDialog import PickEntityDialog
 from ui.component.DumpSettingDialog import DumpSettingDialog
+from ui.component.DetailDialog import DetailDialog
 from ui.component.HTMLDelegate import HTMLDelegate
 from backend.models import Channel, Group
 from backend.views import ProfileView, get_username
@@ -43,6 +44,7 @@ import pytz, tzlocal
 COMBO_ITEM = ('Msg', 'Name', 'UName', 'UId')
 
 class DumpMsgPage(QWidget):
+    PK_ROLE = 1
     PROFILE_ID_ROLE = 100
     MSG_ID_ROLE = 200
     FWD_ENTITY_ID_ROLE = 300
@@ -163,6 +165,8 @@ class DumpMsgPage(QWidget):
 
         self.profile_list.doubleClicked.connect(self.on_profile)
         self.msg_view_list.doubleClicked.connect(self.on_jump)
+        self.msg_view_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.msg_view_list.customContextMenuRequested.connect(self.on_right_click)
 
         self.entity_input.setText(self.conf.his_entity)
         self.search_input.setText(self.conf.his_search)
@@ -190,6 +194,17 @@ class DumpMsgPage(QWidget):
 
         self.profile_list.setContextMenuPolicy(Qt.CustomContextMenu)
         self.profile_list.customContextMenuRequested.connect(self.show_context_menu)
+
+    def on_right_click(self, index):
+        print('on_right_click')
+        item = self.msg_view_list.itemAt(index)
+        if item:
+            pk = item.data(self.PK_ROLE)
+            msg = self.msg_view.get_by_pk(pk)
+            # if msg:
+            # print('pk', pk)
+            self.dialog = DetailDialog(msg)
+            self.dialog.show()
 
     def on_search_mode(self, index):
         match (index):
@@ -520,8 +535,8 @@ class DumpMsgPage(QWidget):
             # print('-----------------------------------------------------------------------------------------------')
             # print(msg)
             # print('-----------------------------------------------------------------------------------------------')
-
-            usr_name = self.msg_view.get_usr_name(msg.sender_id)
+            # get_usr_name
+            usr_name = self.msg_view.get_sender_name(msg.sender_id)
             # message_content = msg.message
             if keyword:
                 lower_keyword = keyword.lower()
@@ -534,7 +549,7 @@ class DumpMsgPage(QWidget):
                         before_keyword = content[:index]
                         after_keyword = content[index + len(keyword):]
                         light_keyword = content[index:index + len(keyword)]
-                        message_content = f"{before_keyword}<span style='color: red;'>{light_keyword}</span>{after_keyword}"
+                        message_content = f"{before_keyword}<span style='color: red;'>{light_keyword}</span>&nbsp;&nbsp;{after_keyword}"
                     else:
                         message_content = content
 
@@ -566,12 +581,12 @@ class DumpMsgPage(QWidget):
             else:
                 content = message_content
             if message_content:
+                item = QListWidgetItem(content)
+                item.setData(self.PK_ROLE, msg.id)
                 if not msg.forward_info:
-                    item = QListWidgetItem(content)
                     item.setData(self.MSG_ID_ROLE, msg.message_id)
                     self.msg_view_list.addItem(item)
                 elif msg.forward_info:
-                    item = QListWidgetItem(content)
                     fwd_info = self.msg_view.get_fwd_info(msg.forward_info)
                     if fwd_info:
                         item.setData(self.MSG_ID_ROLE, fwd_info.fwd_msg_id)

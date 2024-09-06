@@ -16,8 +16,6 @@ from backend.models import Channel, Group
 from backend.views import ChannelView, GroupView
 from datetime import datetime
 
-from qasync import asyncSlot, asyncClose
-
 from util import center, get_ui_path
 from qasync import asyncSlot
 
