@@ -138,6 +138,11 @@ class SendMsgPage(QWidget):
         self.remove_btn.clicked.connect(self.on_remove)
         self.setting_btn.clicked.connect(self.on_setting)
 
+        start = self.msg_list.indexAt(QPoint()).row()
+        end = self.msg_list.indexAt(self.msg_list.viewport().rect().bottomRight()).row()
+        print('start',start)
+        print('end', end)
+
     @Slot(str,str)
     def on_msg_received(self,content,delay):
         item_content = self.encode_conf(content,delay)
@@ -158,7 +163,7 @@ class SendMsgPage(QWidget):
 
     def encode_conf(self,content, delay):
         content = content.replace('\n', '<br/>')
-        return f"<span style='color: grey;'>content</span>:{content}<br/><span style='color: grey;'>delay:{delay}</span>"
+        return f"<span style='color: grey;'>content</span>:<div style='margin-left: 15px; margin-top: 10px;'>{content}</div><br/><span style='color: grey;'>delay:{delay}</span>"
 
     def get_data(self, item):
         content = item.data(self.MSG_ROLE)

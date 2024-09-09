@@ -40,8 +40,19 @@ from telethon.tl.types import PeerChannel
 
 from datetime import datetime, timedelta
 import pytz, tzlocal
+from enum import Enum
 
 COMBO_ITEM = ('Msg', 'Name', 'UName', 'UId')
+
+# class _MsgRole(Enum):
+#     PK_ROLE = 1
+#     PROFILE_ID_ROLE = 100
+#     MSG_ID_ROLE = 200
+#     FWD_ENTITY_ID_ROLE = 300
+#     CHANNEL_NAME_ROLE = 301
+#     IS_USER_ROLE = 302
+
+#     SELF_ID = 100
 
 class DumpMsgPage(QWidget):
     PK_ROLE = 1
@@ -577,7 +588,7 @@ class DumpMsgPage(QWidget):
 
             # print('message_content',message_content)
             if usr_name:
-                content = f"<span style='color: grey;'>{usr_name}</span>:<br/>{message_content}"
+                content = f"<span style='color: grey; font-size:13px;'>{usr_name}</span>:<div style='margin-left: 15px; margin-top: 10px;'>{message_content}</div>"
             else:
                 content = message_content
             if message_content:
