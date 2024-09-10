@@ -1,6 +1,6 @@
 from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
                             QMetaObject, QObject, QPoint, QRect,
-                            QSize, QTime, QUrl, Qt)
+                            QSize, QTime, QUrl, Qt, QSignalBlocker)
 from PySide6.QtCore import QFile, Slot
 from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
                            QFont, QFontDatabase, QGradient, QIcon,
@@ -29,9 +29,13 @@ from util import get_ui_path, get_icon_path
 import asyncio, random
 from ui.component.Spinner import Spinner
 
-class SendMsgPage(QWidget):
+from enum import Enum
+
+class _MsgConfRole(Enum):
     MSG_ROLE = 100
     DELAY_ROLE = 101
+
+class SendMsgPage(QWidget):
     comboItemName = ['name','id']
     def __init__(self):
         super().__init__()
@@ -100,8 +104,8 @@ class SendMsgPage(QWidget):
             delay = msg.delay
             item_content = self.encode_conf(content, delay)
             item = QListWidgetItem(item_content)
-            item.setData(self.DELAY_ROLE, delay)
-            item.setData(self.MSG_ROLE, content)
+            item.setData(_MsgConfRole.DELAY_ROLE.value, delay)
+            item.setData(_MsgConfRole.MSG_ROLE.value, content)
             self.msg_list.addItem(item)
             # self.on_msg_received(msg.content,msg.delay)
         self.add_btn.setIcon(QIcon(get_icon_path('add.svg')))
@@ -147,8 +151,8 @@ class SendMsgPage(QWidget):
     def on_msg_received(self,content,delay):
         item_content = self.encode_conf(content,delay)
         item = QListWidgetItem(item_content)
-        item.setData(self.DELAY_ROLE, delay)
-        item.setData(self.MSG_ROLE, content)
+        item.setData(_MsgConfRole.DELAY_ROLE.value, delay)
+        item.setData(_MsgConfRole.MSG_ROLE.value, content)
         if not self.is_update:
             self.msg_list.addItem(item)
             self.msg_conf_view.save(content=content,delay=delay)
@@ -166,8 +170,8 @@ class SendMsgPage(QWidget):
         return f"<span style='color: grey;'>content</span>:<div style='margin-left: 15px; margin-top: 10px;'>{content}</div><br/><span style='color: grey;'>delay:{delay}</span>"
 
     def get_data(self, item):
-        content = item.data(self.MSG_ROLE)
-        delay = item.data(self.DELAY_ROLE)
+        content = item.data(_MsgConfRole.MSG_ROLE.value)
+        delay = item.data(_MsgConfRole.DELAY_ROLE.value)
         return content, delay
 
     def on_update(self,index):
@@ -222,7 +226,7 @@ class SendMsgPage(QWidget):
             for i in range(self.msg_list.count()):
                 item = self.msg_list.item(i)
                 if self.is_random:
-                    content = self.msg_list.data(self.MSG_ROLE)
+                    content = self.msg_list.data(_MsgConfRole.MSG_ROLE.value)
                     delay = random.randint(self.r_from, self.r_to)
                     print(delay)
                 else:

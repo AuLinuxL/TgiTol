@@ -3,7 +3,7 @@ import asyncio, os, time, subprocess
 import ujson
 from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
                             QMetaObject, QObject, QPoint, QRect,
-                            QSize, QTime, QUrl, Qt)
+                            QSize, QTime, QUrl, Qt, QSignalBlocker)
 from PySide6.QtCore import QFile, Slot
 from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
                            QFont, QFontDatabase, QGradient, QIcon,
@@ -43,18 +43,7 @@ import pytz, tzlocal
 from enum import Enum
 
 COMBO_ITEM = ('Msg', 'Name', 'UName', 'UId')
-
-# class _MsgRole(Enum):
-#     PK_ROLE = 1
-#     PROFILE_ID_ROLE = 100
-#     MSG_ID_ROLE = 200
-#     FWD_ENTITY_ID_ROLE = 300
-#     CHANNEL_NAME_ROLE = 301
-#     IS_USER_ROLE = 302
-
-#     SELF_ID = 100
-
-class DumpMsgPage(QWidget):
+class _MsgRole(Enum):
     PK_ROLE = 1
     PROFILE_ID_ROLE = 100
     MSG_ID_ROLE = 200
@@ -62,6 +51,7 @@ class DumpMsgPage(QWidget):
     CHANNEL_NAME_ROLE = 301
     IS_USER_ROLE = 302
 
+class DumpMsgPage(QWidget):
     SELF_ID = 100
 
     def __init__(self):
@@ -210,7 +200,7 @@ class DumpMsgPage(QWidget):
         print('on_right_click')
         item = self.msg_view_list.itemAt(index)
         if item:
-            pk = item.data(self.PK_ROLE)
+            pk = item.data(_MsgRole.PK_ROLE.value)
             msg = self.msg_view.get_by_pk(pk)
             # if msg:
             # print('pk', pk)
@@ -242,7 +232,7 @@ class DumpMsgPage(QWidget):
             menu.addAction(update_action)
             menu.addAction(delete_action)
 
-            profile_id = item.data(self.PROFILE_ID_ROLE)
+            profile_id = item.data(_MsgRole.PROFILE_ID_ROLE.value)
             if profile_id and int(profile_id) == self.SELF_ID:
                 rec_action = QAction('Recover', self)
                 rec_action.triggered.connect(lambda: self.rec_saved(item))
@@ -330,7 +320,7 @@ class DumpMsgPage(QWidget):
     @asyncSlot()
     async def update_item(self, item):
         self.spinner.start()
-        self.ex_id = item.data(self.PROFILE_ID_ROLE)
+        self.ex_id = item.data(_MsgRole.PROFILE_ID_ROLE.value)
         start_id = self.msg_view.get_max_entity_id(self.ex_id)
         print(start_id)
         # exit()
@@ -342,7 +332,7 @@ class DumpMsgPage(QWidget):
         self.read_db(self.msg_view, self.signal, self.ex_id)
 
     def delete_item(self, item):
-        id = item.data(self.PROFILE_ID_ROLE)
+        id = item.data(_MsgRole.PROFILE_ID_ROLE.value)
         self.msg_view.delete(id)
         self.pro_view.delete(id)
         self.profile_list.takeItem(self.profile_list.row(item))
@@ -353,7 +343,7 @@ class DumpMsgPage(QWidget):
         for pro in proList:
             item = QListWidgetItem(pro.name)
             print(pro.entity_id)
-            item.setData(self.PROFILE_ID_ROLE,pro.entity_id)
+            item.setData(_MsgRole.PROFILE_ID_ROLE.value,pro.entity_id)
             self.profile_list.addItem(item)
 
     def trigger_search_layout(self,is_show):
@@ -396,14 +386,14 @@ class DumpMsgPage(QWidget):
     async def on_jump(self,index):
         row = index.row()
         item = self.msg_view_list.item(row)
-        fwd_entity_id = item.data(self.FWD_ENTITY_ID_ROLE)
-        channel_name = item.data(self.CHANNEL_NAME_ROLE)
-        is_user = int(item.data(self.IS_USER_ROLE) if item.data(self.IS_USER_ROLE) else 0)
+        fwd_entity_id = item.data(_MsgRole.FWD_ENTITY_ID_ROLE.value)
+        channel_name = item.data(_MsgRole.CHANNEL_NAME_ROLE.value)
+        is_user = int(item.data(_MsgRole.IS_USER_ROLE.value) if item.data(_MsgRole.IS_USER_ROLE.value) else 0)
         if is_user:
             print('Message is private!')
             return
         print('fwd_entity_id',fwd_entity_id,'channel_name',channel_name)
-        message_id = item.data(self.MSG_ID_ROLE)
+        message_id = item.data(_MsgRole.MSG_ID_ROLE.value)
         if fwd_entity_id or channel_name:
             if channel_name:
                 jump_url = f'tg://resolve?domain={channel_name}&post={message_id}'
@@ -435,7 +425,7 @@ class DumpMsgPage(QWidget):
         # self.spinner.start()
         row = index.row()
         item = self.profile_list.item(row)
-        entity_id = item.data(self.PROFILE_ID_ROLE)
+        entity_id = item.data(_MsgRole.PROFILE_ID_ROLE.value)
         self.ex_id, _ = self.msg_view.exist(str(entity_id))
         self.page_count = 0
         self.read_db(self.msg_view, self.signal, entity_id)
@@ -593,17 +583,17 @@ class DumpMsgPage(QWidget):
                 content = message_content
             if message_content:
                 item = QListWidgetItem(content)
-                item.setData(self.PK_ROLE, msg.id)
+                item.setData(_MsgRole.PK_ROLE.value, msg.id)
                 if not msg.forward_info:
-                    item.setData(self.MSG_ID_ROLE, msg.message_id)
+                    item.setData(_MsgRole.MSG_ID_ROLE.value, msg.message_id)
                     self.msg_view_list.addItem(item)
                 elif msg.forward_info:
                     fwd_info = self.msg_view.get_fwd_info(msg.forward_info)
                     if fwd_info:
-                        item.setData(self.MSG_ID_ROLE, fwd_info.fwd_msg_id)
-                        item.setData(self.FWD_ENTITY_ID_ROLE, fwd_info.fwd_entity_id)
-                        item.setData(self.CHANNEL_NAME_ROLE, fwd_info.channel_name)
-                        item.setData(self.IS_USER_ROLE, fwd_info.is_user)
+                        item.setData(_MsgRole.MSG_ID_ROLE.value, fwd_info.fwd_msg_id)
+                        item.setData(_MsgRole.FWD_ENTITY_ID_ROLE.value, fwd_info.fwd_entity_id)
+                        item.setData(_MsgRole.CHANNEL_NAME_ROLE.value, fwd_info.channel_name)
+                        item.setData(_MsgRole.IS_USER_ROLE.value, fwd_info.is_user)
                     self.msg_view_list.addItem(item)
         self.spinner.delete()
         # print('on_msg_return', msg_list)
